@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { inject } from '@vercel/analytics';
 import { submitDemoLead } from './lib/supabase';
 import { content } from './config/variant';
+import { initAnalytics, track } from './lib/analytics';
 
 export default function App() {
   const navigate = useNavigate();
@@ -17,9 +18,12 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const formStartedRef = useRef(false);
 
   useEffect(() => {
     try { inject({ debug: false }); } catch (_) {}
+    initAnalytics();
+    track('lp_view');
 
     const nav = document.getElementById('nav');
     const handleScroll = () => {
@@ -37,11 +41,28 @@ export default function App() {
     );
     document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
 
+    // Funil: registra a 1ª vez que cada seção principal aparece (scroll-depth)
+    const seenSections = new Set<string>();
+    const sectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = (entry.target as HTMLElement).id;
+          if (entry.isIntersecting && id && !seenSections.has(id)) {
+            seenSections.add(id);
+            track('section_view', { section: id });
+          }
+        });
+      },
+      { threshold: 0.25 }
+    );
+    document.querySelectorAll('section[id]').forEach((el) => sectionObserver.observe(el));
+
     // Demo modal handlers
     const demoLinks = document.querySelectorAll('a[href="#demo"]');
     demoLinks.forEach((link) => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
+        track('cta_demo_click');
         setIsModalOpen(true);
       });
     });
@@ -49,12 +70,20 @@ export default function App() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
+      sectionObserver.disconnect();
     };
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFormFocus = () => {
+    if (!formStartedRef.current) {
+      formStartedRef.current = true;
+      track('form_start');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -69,8 +98,10 @@ export default function App() {
         monthly_orders: formData.monthlyOrders,
         source: formData.source,
       });
+      track('lead_submit', { monthly_orders: formData.monthlyOrders, source: formData.source });
       navigate(`/obrigado?nome=${encodeURIComponent(formData.name.trim())}`);
     } catch {
+      track('lead_submit_error');
       setSubmitError('Algo deu errado. Tente novamente ou entre em contato pelo WhatsApp.');
     } finally {
       setIsSubmitting(false);
@@ -566,7 +597,7 @@ export default function App() {
                   <h2>Agendar minha demo</h2>
                   <p>Preencha os dados abaixo. Nosso time entra em contato em breve.</p>
                 </div>
-                <form className="demo-form" onSubmit={handleSubmit}>
+                <form className="demo-form" onSubmit={handleSubmit} onFocus={handleFormFocus}>
                   <div className="form-group">
                     <label htmlFor="name">Seu nome</label>
                     <input

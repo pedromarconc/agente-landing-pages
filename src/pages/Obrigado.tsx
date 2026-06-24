@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { track } from '../lib/analytics';
 
 export default function Obrigado() {
   const [searchParams] = useSearchParams();
@@ -11,6 +12,7 @@ export default function Obrigado() {
     if (firedRef.current) return;
     firedRef.current = true;
     window.gtag_report_conversion?.();
+    track('thankyou_view');
   }, []);
 
   return (
@@ -40,6 +42,7 @@ export default function Obrigado() {
               className="ob-btn-primary"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => track('whatsapp_click')}
             >
               Abrir WhatsApp
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
