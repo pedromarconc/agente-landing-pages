@@ -36,7 +36,7 @@ export default function Obrigado() {
 
           <div className="ob-ctas">
             <a
-              href="https://wa.me/5511999999999"
+              href="https://wa.me/5535936180694"
               className="ob-btn-primary"
               target="_blank"
               rel="noopener noreferrer"
