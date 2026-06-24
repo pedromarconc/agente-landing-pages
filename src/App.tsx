@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { inject } from '@vercel/analytics';
 import { submitDemoLead } from './lib/supabase';
+import { content } from './config/variant';
 
 export default function App() {
   const navigate = useNavigate();
@@ -104,8 +105,8 @@ export default function App() {
           <div className="hero-content fade-up">
             <div className="hero-eyebrow"><span></span> Pós-venda para e-commerce</div>
             <h1>
-              Seu cliente quer saber onde está o pedido.<br />
-              <span className="highlight">A Kanglu responde antes.</span>
+              {content.heroTitleLine1}<br />
+              <span className="highlight">{content.heroTitleHighlight}</span>
             </h1>
             <p className="hero-sub">
               Rastreio proativo, trocas automatizadas e auditoria de frete, tudo integrado à sua loja, sem código, sem planilha, sem atendimento manual.
