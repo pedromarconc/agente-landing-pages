@@ -3,18 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { inject } from '@vercel/analytics';
 import { submitDemoLead } from './lib/supabase';
 
-declare global {
-  interface Window {
-    gtag_report_conversion: (url?: string) => false;
-  }
-}
-
-function fireConversion() {
-  if (typeof window !== 'undefined' && typeof window.gtag_report_conversion === 'function') {
-    window.gtag_report_conversion();
-  }
-}
-
 export default function App() {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,7 +41,6 @@ export default function App() {
     demoLinks.forEach((link) => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
-        fireConversion();
         setIsModalOpen(true);
       });
     });
@@ -81,7 +68,6 @@ export default function App() {
         monthly_orders: formData.monthlyOrders,
         source: formData.source,
       });
-      fireConversion();
       navigate(`/obrigado?nome=${encodeURIComponent(formData.name.trim())}`);
     } catch {
       setSubmitError('Algo deu errado. Tente novamente ou entre em contato pelo WhatsApp.');

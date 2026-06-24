@@ -1,8 +1,17 @@
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export default function Obrigado() {
   const [searchParams] = useSearchParams();
   const nome = searchParams.get('nome')?.trim() || null;
+
+  // Conversão (Google Ads) dispara 1x no mount do /obrigado — só após o lead ser enviado.
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    window.gtag_report_conversion?.();
+  }, []);
 
   return (
     <div className="ob-root">
