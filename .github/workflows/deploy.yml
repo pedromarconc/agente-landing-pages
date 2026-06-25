@@ -2,12 +2,13 @@ name: Deploy to Vercel (paid account)
 
 # Publica as duas variantes A/B na conta Vercel PAGA via token.
 # A conta Vercel gratuita continua integrada ao GitHub normalmente — sem conflito.
-# Gatilho: push na main (go-live).
+# Gatilho: push na main (go-live) ou disparo manual (workflow_dispatch).
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -20,8 +21,20 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+
+      # Falha cedo e claro se o VERCEL_TOKEN não chegou (secret no lugar errado, etc).
+      # Mostra só o TAMANHO do token, nunca o valor.
+      - name: Check VERCEL_TOKEN
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN veio VAZIO. Verifique: repo → Settings → Secrets and variables → Actions → aba 'Secrets' (NÃO 'Variables') → Repository secret com nome exato VERCEL_TOKEN."
+            exit 1
+          fi
+          echo "✓ VERCEL_TOKEN presente (tamanho: ${#VERCEL_TOKEN} caracteres)."
 
       - name: Install Vercel CLI
         run: npm i -g vercel
