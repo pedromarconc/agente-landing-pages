@@ -1,0 +1,62 @@
+name: Deploy to Vercel (paid account)
+
+# Publica as duas variantes A/B na conta Vercel PAGA via token.
+# A conta Vercel gratuita continua integrada ao GitHub normalmente — sem conflito.
+# Gatilho: push na main (go-live).
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+
+      # Garante que os projetos existem na conta paga (idempotente)
+      - name: Create Vercel projects (if not exist)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel project add kanglu-landing   --yes --token "$VERCEL_TOKEN" 2>/dev/null || true
+          vercel project add kanglu-landing-b --yes --token "$VERCEL_TOKEN" 2>/dev/null || true
+
+      # Analytics: IDs vazios → guards em analytics.ts tratam como no-op (site funciona normal)
+      - name: Deploy Variante A
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VITE_CLARITY_ID: ${{ secrets.VITE_CLARITY_ID }}
+          VITE_GA4_ID: ${{ secrets.VITE_GA4_ID }}
+        run: |
+          vercel deploy --prod --yes \
+            --project kanglu-landing \
+            --token "$VERCEL_TOKEN" \
+            --build-env VITE_VARIANT=A \
+            --build-env "VITE_CLARITY_ID=${VITE_CLARITY_ID}" \
+            --build-env "VITE_GA4_ID=${VITE_GA4_ID}"
+
+      - name: Deploy Variante B
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VITE_CLARITY_ID: ${{ secrets.VITE_CLARITY_ID }}
+          VITE_GA4_ID: ${{ secrets.VITE_GA4_ID }}
+        run: |
+          vercel deploy --prod --yes \
+            --project kanglu-landing-b \
+            --token "$VERCEL_TOKEN" \
+            --build-env VITE_VARIANT=B \
+            --build-env "VITE_CLARITY_ID=${VITE_CLARITY_ID}" \
+            --build-env "VITE_GA4_ID=${VITE_GA4_ID}"

@@ -59,11 +59,13 @@ npm run lint       # eslint
 Build de uma variante: `VITE_VARIANT=B npm run build`.
 
 ## Deploy
-- **Publicação na conta Vercel PAGA via CLI** (`./deploy.sh`) — ver **`DEPLOY.md`**.
+- **Publicação via GitHub Actions → conta Vercel PAGA** — ver **`DEPLOY.md`**.
   Motivo: o GitHub está conectado a uma conta Vercel **gratuita** (não cria env vars);
-  a conta **paga** cria env vars mas não tem integração GitHub. A CLI publica direto na paga.
-- `deploy.sh` cria/atualiza os 2 projetos (`kanglu-landing` A, `kanglu-landing-b` B) e injeta
-  `VITE_VARIANT` por variante via `--build-env` (A→projeto A, B→projeto B). Analytics opcional via `.env.deploy`.
+  a conta **paga** tem env vars mas não está conectada ao GitHub. GitHub Actions usa um
+  **token** da conta paga para deployar direto, sem conflito e sem mexer na integração existente.
+- Workflow: `.github/workflows/deploy.yml` — push na `main` publica os 2 projetos
+  (`kanglu-landing` A, `kanglu-landing-b` B), injetando `VITE_VARIANT` por variante.
+- Secrets necessários no GitHub: `VERCEL_TOKEN` (obrigatório), `VITE_CLARITY_ID` e `VITE_GA4_ID` (opcionais).
 - Produção = branch **`main`** (já criada). Trabalho na branch `claude/focused-davinci-f0uxhd`.
   **Go-live / mudanças em produção só com aprovação.**
 

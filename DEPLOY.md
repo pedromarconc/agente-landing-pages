@@ -1,51 +1,70 @@
-# Deploy — Kanglu Landing (Vercel CLI)
+# Deploy — Kanglu Landing (GitHub Actions → Vercel pago)
 
-Publicação das duas variantes (A/B) na conta **Vercel paga**, via CLI.
+As duas variantes (A/B) são publicadas na conta **Vercel paga** via GitHub Actions.
 
-> **Por quê CLI?** O GitHub está conectado a uma conta Vercel gratuita (que não cria
-> env vars). A conta paga cria env vars mas não está conectada ao GitHub. A CLI publica
-> direto na conta paga, sem depender dessa integração.
+> **Por quê assim?** O GitHub está conectado a uma conta Vercel **gratuita** (sem env vars).
+> A conta **paga** tem env vars mas não está conectada ao GitHub.
+> O GitHub Actions usa um **token** da conta paga para deployar direto — sem conflito,
+> sem mexer na integração GitHub↔Vercel gratuita.
 
-## Pré-requisitos (uma vez)
+## Como funciona
+
+- Push na branch **`main`** → `.github/workflows/deploy.yml` roda automaticamente.
+- O workflow publica os projetos `kanglu-landing` (variante A) e `kanglu-landing-b` (variante B)
+  na conta paga, injetando `VITE_VARIANT` por variante no build.
+
+## Setup (uma vez)
+
+### 1. Gere o token no Vercel pago
+
+Conta Vercel paga → **Settings → Tokens** → **Create Token**
+- Scope: Full Account (ou o time onde vão ficar os projetos)
+- Anote o valor — aparece uma só vez.
+
+### 2. Adicione os secrets no GitHub
+
+No repo `pedromarconc/agente-landing-pages` →
+**Settings → Secrets and variables → Actions → New repository secret**
+
+| Secret | Valor | Obrigatório? |
+|--------|-------|-------------|
+| `VERCEL_TOKEN` | token gerado no passo 1 | ✅ Sim |
+| `VITE_CLARITY_ID` | ID do projeto no Microsoft Clarity | Não (analytics off sem ele) |
+| `VITE_GA4_ID` | `G-XXXXXXXXXX` do GA4 | Não (analytics off sem ele) |
+
+> Analytics IDs vazios = no-op (o site funciona normal, só sem heatmaps/funil).
+> Dá pra adicionar depois e o próximo deploy já liga.
+
+### 3. Pronto — o próximo push na `main` deploya automaticamente
+
+Acompanhe em: GitHub → repo → **Actions** → workflow "Deploy to Vercel (paid account)"
+
+## Primeiro deploy manual (se quiser subir sem esperar um push)
 
 ```bash
-npm i -g vercel     # instala a CLI
-vercel login        # entre na sua conta Vercel PAGA (escolha "Continue with Email")
+# No seu computador, na raiz do projeto:
+npm i -g vercel
+vercel login   # entre na conta PAGA (escolha "Continue with Email")
+./deploy.sh    # publica A e B na conta logada
 ```
 
-## Analytics (opcional)
-
-Os IDs do Clarity e GA4 são os **mesmos** nas duas variantes. Para ligar:
-
-```bash
-cp .env.deploy.example .env.deploy
-# edite .env.deploy e preencha VITE_CLARITY_ID e VITE_GA4_ID
-```
-
-Sem esses IDs o site funciona normal — só o analytics fica desligado (no-op).
-
-## Publicar
-
-```bash
-./deploy.sh
-```
-
-O script:
-1. cria os projetos `kanglu-landing` (A) e `kanglu-landing-b` (B) na conta logada — idempotente;
-2. faz **build de produção** de cada variante injetando `VITE_VARIANT` (A/B) via `--build-env`;
-3. publica em produção e imprime as URLs.
-
-> ⚠️ **Go-live de conversão:** o site dispara a conversão do Google Ads
-> (`AW-18210492584/...`) no `/obrigado`. Avise o agente de Ads quando publicar —
-> o volume de conversões passa a contar de verdade.
+> `deploy.sh` está no repo como alternativa para deploys manuais pontuais.
+> Ele também carrega `VITE_CLARITY_ID`/`VITE_GA4_ID` de um arquivo local `.env.deploy`
+> (copie de `.env.deploy.example` e preencha).
 
 ## Conferir após o deploy
 
-- URL do projeto A → H1 deve ser **"Seu cliente quer saber onde está o pedido. A Kanglu responde antes."**
-- URL do projeto B → H1 deve ser **"Cadê meu pedido? A Kanglu responde antes do cliente perguntar."**
-- Preencher o formulário → deve cair no Supabase e abrir `/obrigado`.
+- URL do projeto A → H1: **"Seu cliente quer saber onde está o pedido. A Kanglu responde antes."**
+- URL do projeto B → H1: **"Cadê meu pedido? A Kanglu responde antes do cliente perguntar."**
+- Preencher o formulário → lead deve aparecer no Supabase e abrir `/obrigado`.
 
-## Domínio próprio (quando quiser)
+## Domínio próprio
 
-No painel da Vercel paga → projeto → **Settings → Domains** → adicione o domínio e
-aponte o DNS conforme as instruções da Vercel.
+No painel da Vercel paga → projeto → **Settings → Domains** → adicione o domínio
+e aponte o DNS conforme as instruções da Vercel.
+
+## ⚠️ Aviso de go-live
+
+Quando a primeira publicação entrar no ar, o `/obrigado` passa a disparar a conversão
+do Google Ads (`AW-18210492584/...`) de verdade.
+**Avise o agente de Ads** — vocês dividem o mesmo Conversion ID.
