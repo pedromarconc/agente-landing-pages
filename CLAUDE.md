@@ -59,8 +59,13 @@ npm run lint       # eslint
 Build de uma variante: `VITE_VARIANT=B npm run build`.
 
 ## Deploy
-- Vercel deploya da branch de produção (**`main`**) deste repo; cada projeto usa sua `VITE_VARIANT`.
-- Trabalho na branch `claude/focused-davinci-f0uxhd`. **Produção (`main`) só com aprovação** (go-live controlado).
+- **Publicação na conta Vercel PAGA via CLI** (`./deploy.sh`) — ver **`DEPLOY.md`**.
+  Motivo: o GitHub está conectado a uma conta Vercel **gratuita** (não cria env vars);
+  a conta **paga** cria env vars mas não tem integração GitHub. A CLI publica direto na paga.
+- `deploy.sh` cria/atualiza os 2 projetos (`kanglu-landing` A, `kanglu-landing-b` B) e injeta
+  `VITE_VARIANT` por variante via `--build-env` (A→projeto A, B→projeto B). Analytics opcional via `.env.deploy`.
+- Produção = branch **`main`** (já criada). Trabalho na branch `claude/focused-davinci-f0uxhd`.
+  **Go-live / mudanças em produção só com aprovação.**
 
 ## Guardrails
 1. Não alterar o disparo de conversão sem OK explícito.
