@@ -7,6 +7,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+async function notifyTelegram(fields: {
+  name: string;
+  brand_name: string;
+  contact: string;
+  monthly_orders: string;
+  source: string;
+}): Promise<void> {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
+  if (!token || !chatId) return;
+
+  const text =
+    `🔔 <b>Novo lead — Kanglu Landing!</b>\n\n` +
+    `👤 <b>Nome:</b> ${fields.name}\n` +
+    `🏢 <b>Marca:</b> ${fields.brand_name}\n` +
+    `📱 <b>Contato:</b> ${fields.contact}\n` +
+    `📦 <b>Pedidos/mês:</b> ${fields.monthly_orders}\n` +
+    `📍 <b>Variante:</b> ${fields.source}`;
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+  });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -37,6 +63,11 @@ Deno.serve(async (req: Request) => {
     });
 
     if (error) throw error;
+
+    // Notificação Telegram — fire-and-forget: falha silenciosa não afeta o lead
+    notifyTelegram({ name, brand_name, contact, monthly_orders, source }).catch(
+      () => {}
+    );
 
     return new Response(
       JSON.stringify({ success: true }),
